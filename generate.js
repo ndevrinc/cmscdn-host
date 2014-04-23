@@ -10,57 +10,54 @@ var ujs_jsp = require("uglify-js").parser;
 var ujs_pro = require("uglify-js").uglify;
 
 var FILE_ENCODING = 'utf-8',
- 
 EOL = '\n';
 
+var cfg = require('./config').Config;
+
 var public_dir = __dirname + '/public/';
-var release = '7.25';
-var cms = 'drupal';
-var release_dir = public_dir + cms + '/' + release;
-var filename = cms + '-' + release + '.tar.gz';
-var url = 'http://ftp.drupal.org/files/projects/' + filename;
 
-var filesArray = require('./config');
+cfg.releases.forEach(function (release) {
 
-// fs.rmdirSync(release_dir);
-// fs.unlinkSync(public_dir + '/' + filename);
+  var release_dir = public_dir + cfg.cms + '/' + release;
+  var filename = cfg.cms + '-' + release + '.tar.gz';
+  var url = cfg.location + filename;
 
-// Check to make sure the folder wasn't created already
-fs.exists(release_dir, function (exists) {
-  console.error(exists ? "it's there" : "not there");
+  // Check to make sure the folder wasn't created already
+  fs.exists(release_dir, function (exists) {
+    // Skip if the release directory already exists
+    if (exists) {
+      console.log("release " + release + " already exists.");
+    } else {
+      var writer = request(url).pipe(fs.createWriteStream(public_dir + '/' + filename));
 
-  var writer = request(url).pipe(fs.createWriteStream(public_dir + '/' + filename));
+      writer.on('finish', function() {
+        var extract = new targz().extract(public_dir + '/' + filename, public_dir, function(err) {
+          if(err) throw err;
 
-  writer.on('finish', function() {
-    console.error('all writes are now complete.');
-    var extract = new targz().extract(public_dir + '/' + filename, public_dir, function(err) {
-      if(err) throw err;
+          // Deletes the archive file just downloaded
+          fs.unlink(public_dir + '/' + filename);
 
-      // Deletes the archive file just downloaded
-      fs.unlink(public_dir + '/' + filename);
-
-      fs.rename(public_dir + '/' + cms + '-' + release, release_dir, function (err) {
-concat({
-	src : ["misc/drupal.js",
-	"misc/jquery.once.js"],
-	dest : release_dir + '/core.js'
-});
-uglify(release_dir + '/core.js', release_dir + '/core.min.js');
-
-
+          fs.rename(public_dir + '/' + cfg.cms + '-' + release, release_dir, function (err) {
+            concat({
+              dir : release_dir,
+              src : cfg.scripts,
+              dest : '/core.js'
+            });
+            uglify(release_dir + '/core.js', release_dir + '/core.min.js');
+          });
+        });
       });
-    });
+    } // end if the release exists
   });
-
-  console.error('testing threads.');
 });
 
 function concat(opts) {
  
+	var dir = opts.dir;
 	var fileList = opts.src;
-	var distPath = opts.dest;
+	var distPath = dir + opts.dest;
 	var out = fileList.map(function(filePath){
-		return fs.readFileSync(release_dir + '/' + filePath, FILE_ENCODING);
+		return fs.readFileSync(dir + '/' + filePath, FILE_ENCODING);
 	});
  
 	fs.writeFileSync(distPath, out.join(EOL), FILE_ENCODING);
