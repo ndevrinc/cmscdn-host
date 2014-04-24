@@ -38,18 +38,44 @@ cfg.releases.forEach(function (release) {
           fs.unlink(public_dir + '/' + filename);
 
           fs.rename(public_dir + '/' + cfg.cms + '-' + release, release_dir, function (err) {
+          	// Concat the JavaScript files
             concat({
               dir : release_dir,
               src : cfg.scripts,
               dest : '/core.js'
             });
             uglify(release_dir + '/core.js', release_dir + '/core.min.js');
+
+          	// Concat the CSS files
+            concat({
+              dir : release_dir,
+              src : cfg.css,
+              dest : '/core.css'
+            });
+            clean(release_dir + '/core.css', release_dir + '/core.min.css');
+
+          	// Concat the Right to Left CSS files
+            concat({
+              dir : release_dir,
+              src : cfg.css_rtl,
+              dest : '/core-rtl.css'
+            });
+            clean(release_dir + '/core-rtl.css', release_dir + '/core-rtl.min.css');
           });
         });
       });
     } // end if the release exists
   });
 });
+
+function clean(srcPath, distPath) {
+	var 
+		CleanCSS = require('clean-css'),
+		minimized = new CleanCSS().minify(fs.readFileSync(srcPath, FILE_ENCODING));
+
+	fs.writeFileSync(distPath, minimized, FILE_ENCODING);
+	console.log("cleanCSS: " + distPath + ".");
+}
 
 function concat(opts) {
  
@@ -61,7 +87,7 @@ function concat(opts) {
 	});
  
 	fs.writeFileSync(distPath, out.join(EOL), FILE_ENCODING);
-	console.log(' '+ distPath +' built.');
+	console.log("concat: " + distPath + ".");
 }
  
  
@@ -76,7 +102,7 @@ function uglify(srcPath, distPath) {
 	 ast = pro.ast_squeeze(ast);
  
 	 fs.writeFileSync(distPath, pro.gen_code(ast), FILE_ENCODING);
-	 console.log(' '+ distPath +' built.');
+	 console.log("uglify: " + distPath + ".");
 }
  
 
