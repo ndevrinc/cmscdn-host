@@ -1,4 +1,4 @@
 cmscdn-host
 ===========
 
-Creates the hosted files for the cmscdn module.
+Creates the hosted files for the Drupal cmscdn module.
