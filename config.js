@@ -36,7 +36,8 @@ configs.scripts = [
 configs.releases = [
 	"7.25",
 	"7.26",
-	"7.27"
+	"7.27",
+	"7.28"
 ];
 
 exports.Config = configs;
